@@ -33,7 +33,7 @@
 
 ### **1️⃣ Clone the Repository**  
 ```bash
-git clone https://github.com/yourusername/PixelGuard.git
+git clone https://github.com/trinetra110/PixelGuard.git
 cd PixelGuard
 ```
 
