@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="PixelGuard — Image Tampering Detection and Cryptographic Integrity Verification">
+  <title>PixelGuard — Image Integrity & Tamper Detection</title>
+
+  <!-- Aesthetic Editorial Typography: Instrument Serif + Plus Jakarta Sans + Space Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-numeral">01</div>
+        <div class="brand-text">
+          <div class="brand-title">PixelGuard</div>
+          <div class="brand-subtitle">Digital image authentication & pixel-level alteration analysis</div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <div class="system-status">
+          <span class="status-dot"></span>
+          <span class="status-text">System Active / SHA-256</span>
+        </div>
+        <button id="quickSampleBtn" class="btn btn-secondary" type="button">
+          Load Sample Files
+        </button>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs" role="tablist">
+      <button class="tab-btn active" data-tab="tab-compare" id="tabBtnCompare" role="tab" aria-selected="true">
+        <span class="tab-index">A</span>
+        <span>Dual Image Analysis</span>
+      </button>
+
+      <button class="tab-btn" data-tab="tab-verify" id="tabBtnVerify" role="tab" aria-selected="false">
+        <span class="tab-index">B</span>
+        <span>Hash Verification</span>
+      </button>
+
+      <button class="tab-btn" data-tab="tab-hash" id="tabBtnHash" role="tab" aria-selected="false">
+        <span class="tab-index">C</span>
+        <span>Checksum & Metadata</span>
+      </button>
+    </nav>
+
+    <!-- Main Content Panels -->
+    <main class="main-content">
+
+      <!-- ================= TAB 1: DUAL IMAGE ANALYSIS ================= -->
+      <section id="tab-compare" class="tab-panel active">
+        <div class="panel-header">
+          <div>
+            <div class="section-kicker">Forensic Examination</div>
+            <h1 class="panel-title">Comparative Analysis of Reference and Suspect Files</h1>
+            <p class="panel-desc">Evaluate structural metadata, cryptographic SHA-256 signatures, and individual pixel discrepancies between two image files.</p>
+          </div>
+          <div class="sample-preset-pills">
+            <span class="preset-label">Test Presets:</span>
+            <button type="button" class="preset-btn" onclick="loadSampleComparison('leetcode_original.png', 'leetcode_tampered.png')">Contribution Graph (Forged Square in May)</button>
+            <button type="button" class="preset-btn" onclick="loadSampleComparison('original.jpg', 'tampered.jpg')">1-Pixel Tamper</button>
+            <button type="button" class="preset-btn" onclick="loadSampleComparison('original.jpg', 'original.jpg')">Identical Image</button>
+          </div>
+        </div>
+
+        <form id="compareForm" class="upload-dual-grid">
+          <!-- Reference Image -->
+          <div class="dropzone-card" id="dropzoneOrig">
+            <div class="card-header-bar">
+              <span class="badge-terracotta">REFERENCE FILE</span>
+              <span class="file-status-badge" id="origStatusBadge">No file selected</span>
+            </div>
+            <div class="drop-area" id="origDropArea">
+              <input type="file" id="origFileInput" accept="image/*" class="file-input-hidden">
+              <div class="drop-placeholder" id="origPlaceholder">
+                <div class="drop-title">Original Base Image</div>
+                <div class="drop-caption">Select or drag file here</div>
+                <div class="format-tags">
+                  <span>JPG</span><span>PNG</span><span>WEBP</span><span>BMP</span>
+                </div>
+              </div>
+              <div class="image-preview-wrapper hidden" id="origPreviewWrapper">
+                <img id="origImgPreview" alt="Original preview" class="img-preview">
+                <button type="button" class="btn-clear-img" onclick="clearSlot('orig')" title="Remove image">Dismiss</button>
+                <div class="file-info-overlay" id="origFileInfo">filename.jpg</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Suspect Image -->
+          <div class="dropzone-card" id="dropzoneSusp">
+            <div class="card-header-bar">
+              <span class="badge-slate">SUSPECT FILE</span>
+              <span class="file-status-badge" id="suspStatusBadge">No file selected</span>
+            </div>
+            <div class="drop-area" id="suspDropArea">
+              <input type="file" id="suspFileInput" accept="image/*" class="file-input-hidden">
+              <div class="drop-placeholder" id="suspPlaceholder">
+                <div class="drop-title">Suspect Image to Verify</div>
+                <div class="drop-caption">Select or drag file here</div>
+                <div class="format-tags">
+                  <span>JPG</span><span>PNG</span><span>WEBP</span><span>BMP</span>
+                </div>
+              </div>
+              <div class="image-preview-wrapper hidden" id="suspPreviewWrapper">
+                <img id="suspImgPreview" alt="Suspect preview" class="img-preview">
+                <button type="button" class="btn-clear-img" onclick="clearSlot('susp')" title="Remove image">Dismiss</button>
+                <div class="file-info-overlay" id="suspFileInfo">filename.jpg</div>
+              </div>
+            </div>
+          </div>
+        </form>
+
+        <div class="action-submit-bar">
+          <button id="runAnalysisBtn" class="btn btn-primary" onclick="executeComparison()">
+            Run Comparative Analysis
+          </button>
+        </div>
+
+        <!-- Progress Spinner -->
+        <div id="compareLoader" class="scanner-loader hidden">
+          <div class="loader-line"></div>
+          <div class="scanner-text">Processing image matrices and cryptographic hashes...</div>
+        </div>
+
+        <!-- ================= RESULTS VIEW ================= -->
+        <div id="compareResults" class="results-container hidden">
+          
+          <!-- Verdict Banner -->
+          <div id="verdictBanner" class="verdict-banner">
+            <div class="verdict-content">
+              <div class="verdict-badge-row">
+                <span class="badge-terracotta" id="verdictBadge">ANALYSIS RESULT</span>
+              </div>
+              <div class="verdict-headline" id="verdictHeadline">Authentic File</div>
+              <div class="verdict-explanation" id="verdictExplanation">Hashes and pixel values are completely identical.</div>
+            </div>
+            <div class="verdict-actions">
+              <button class="btn btn-secondary btn-sm" onclick="exportJsonReport()">Export Data (JSON)</button>
+              <button class="btn btn-secondary btn-sm" onclick="window.print()">Print Summary</button>
+            </div>
+          </div>
+
+          <!-- Metrics Grid -->
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-label">MODIFIED PIXELS</div>
+              <div class="metric-value" id="metricPixels">0</div>
+              <div class="metric-sub" id="metricPixelSub">0.00% of matrix</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">SHA-256 INTEGRITY</div>
+              <div class="metric-value" id="metricHashMatch">MATCH</div>
+              <div class="metric-sub">Bit-for-bit checksum</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">METADATA STATUS</div>
+              <div class="metric-value" id="metricMetaStatus">MATCH</div>
+              <div class="metric-sub" id="metricMetaSub">Dimensions and headers aligned</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">ALTERATION BOUNDS</div>
+              <div class="metric-value" id="metricBbox">None</div>
+              <div class="metric-sub">Bounding coordinates</div>
+            </div>
+          </div>
+
+          <!-- Visual Inspection Workspace -->
+          <div class="card visual-inspection-card">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">Visual Discrepancy Inspection</h3>
+                <span class="card-desc">Review side-by-side matrices, differential pixel map, or localized bounding markers</span>
+              </div>
+              <div class="view-mode-toggle" id="viewModeToggle">
+                <button type="button" class="toggle-pill active" onclick="switchVisualMode('side-by-side')">Side by Side</button>
+                <button type="button" class="toggle-pill" onclick="switchVisualMode('heatmap')">Difference Map</button>
+                <button type="button" class="toggle-pill" onclick="switchVisualMode('overlay')">Marked Overlay</button>
+                <button type="button" class="toggle-pill" onclick="switchVisualMode('slider')">Split Slider</button>
+              </div>
+            </div>
+
+            <!-- View 1: Side by Side -->
+            <div id="viewSideBySide" class="visual-view-panel active">
+              <div class="side-by-side-grid">
+                <div class="view-slot">
+                  <div class="slot-badge">REFERENCE</div>
+                  <div class="zoom-canvas-container">
+                    <img id="visImgOrig" alt="Original" class="inspected-img">
+                  </div>
+                </div>
+                <div class="view-slot">
+                  <div class="slot-badge alert-badge">SUSPECT</div>
+                  <div class="zoom-canvas-container">
+                    <img id="visImgSusp" alt="Suspect" class="inspected-img">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- View 2: Diff Map -->
+            <div id="viewHeatmap" class="visual-view-panel hidden">
+              <div class="diff-viewer-wrapper">
+                <div class="slot-badge">ISOLATED PIXEL DIFFERENCES</div>
+                <div class="heatmap-container">
+                  <img id="visImgDiff" alt="Difference map" class="inspected-img">
+                </div>
+                <p class="viewer-note">Altered pixel positions rendered with high visual contrast.</p>
+              </div>
+            </div>
+
+            <!-- View 3: Overlay with Bounding Box Target -->
+            <div id="viewOverlay" class="visual-view-panel hidden">
+              <div class="diff-viewer-wrapper">
+                <div class="slot-badge alert-badge">SUSPECT WITH TARGET BOUNDS</div>
+                <div class="heatmap-container">
+                  <img id="visImgOverlay" alt="Overlay" class="inspected-img">
+                </div>
+                <p class="viewer-note">Bounding box enclosing altered coordinate range.</p>
+              </div>
+            </div>
+
+            <!-- View 4: Before / After Slider -->
+            <div id="viewSlider" class="visual-view-panel hidden">
+              <div class="slider-container" id="revealSlider">
+                <div class="slider-image-before">
+                  <img id="sliderOrigImg" alt="Before">
+                  <span class="slider-badge before-badge">REFERENCE</span>
+                </div>
+                <div class="slider-image-after" id="sliderAfterLayer">
+                  <img id="sliderSuspImg" alt="After">
+                  <span class="slider-badge after-badge">SUSPECT</span>
+                </div>
+                <input type="range" min="0" max="100" value="50" class="reveal-slider-input" id="sliderRange">
+                <div class="slider-handle" id="sliderHandle">
+                  <div class="handle-line"></div>
+                  <div class="handle-box">SPLIT</div>
+                </div>
+              </div>
+              <p class="viewer-note">Drag slider horizontally to observe pixel discrepancies across both files.</p>
+            </div>
+          </div>
+
+          <!-- Hash Comparison Card -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Cryptographic Hash Checksums</h3>
+            </div>
+            <div class="hash-audit-list">
+              <div class="hash-row">
+                <div class="hash-meta">
+                  <span class="hash-role">Reference Hash</span>
+                  <span class="file-name" id="hashOrigName">filename.jpg</span>
+                </div>
+                <div class="hash-code-box">
+                  <code id="hashOrigVal" class="hash-text">...</code>
+                  <button type="button" class="btn-copy" onclick="copyText('hashOrigVal')">Copy</button>
+                </div>
+              </div>
+              <div class="hash-row">
+                <div class="hash-meta">
+                  <span class="hash-role alert">Suspect Hash</span>
+                  <span class="file-name" id="hashSuspName">filename.jpg</span>
+                </div>
+                <div class="hash-code-box">
+                  <code id="hashSuspVal" class="hash-text">...</code>
+                  <button type="button" class="btn-copy" onclick="copyText('hashSuspVal')">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Detailed Metadata Table -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">File Structure & Metadata Verification</h3>
+            </div>
+            <div class="table-responsive">
+              <table class="forensic-table">
+                <thead>
+                  <tr>
+                    <th>Parameter</th>
+                    <th>Reference Image</th>
+                    <th>Suspect Image</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="metadataTableBody">
+                  <!-- Injected via JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Pixel Coordinates Log -->
+          <div class="card" id="pixelsLogCard">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">Altered Coordinate Register</h3>
+                <span class="card-desc">Sample modified pixel locations and mapped RGB color transitions</span>
+              </div>
+            </div>
+            <div class="pixel-matrix-list" id="pixelMatrixList">
+              <!-- Injected via JavaScript -->
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ================= TAB 2: HASH VERIFIER ================= -->
+      <section id="tab-verify" class="tab-panel">
+        <div class="panel-header">
+          <div>
+            <div class="section-kicker">Signature Matching</div>
+            <h1 class="panel-title">Verify File Against Known Checksum</h1>
+            <p class="panel-desc">Assess whether a suspect image file matches a previously recorded SHA-256 hash digest.</p>
+          </div>
+        </div>
+
+        <div class="verify-grid">
+          <div class="card">
+            <div class="card-header">
+              <span class="badge-terracotta">STEP 1</span>
+              <span class="card-title-sm">Upload File</span>
+            </div>
+            <div class="drop-area small-drop-area" id="verifyDropArea">
+              <input type="file" id="verifyFileInput" accept="image/*" class="file-input-hidden">
+              <div class="drop-placeholder" id="verifyPlaceholder">
+                <div class="drop-title">Select Suspect Image</div>
+                <div class="drop-caption">Choose file or drag here</div>
+              </div>
+              <div class="image-preview-wrapper hidden" id="verifyPreviewWrapper">
+                <img id="verifyImgPreview" alt="Preview" class="img-preview">
+                <button type="button" class="btn-clear-img" onclick="clearVerifySlot()">Dismiss</button>
+                <div class="file-info-overlay" id="verifyFileInfo">file.jpg</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <span class="badge-sage">STEP 2</span>
+              <span class="card-title-sm">Reference Hash</span>
+            </div>
+            <div class="input-group">
+              <label for="verifyStoredHashInput" class="input-label">Known SHA-256 Checksum (64 characters):</label>
+              <textarea id="verifyStoredHashInput" rows="3" class="text-input-field font-mono" placeholder="Paste previously recorded SHA-256 hash here..."></textarea>
+            </div>
+            <button type="button" class="btn btn-primary btn-full-width" onclick="executeVerify()">
+              Validate Checksum
+            </button>
+          </div>
+        </div>
+
+        <div id="verifyResultContainer" class="results-container hidden">
+          <!-- Injected dynamically -->
+        </div>
+      </section>
+
+      <!-- ================= TAB 3: HASH GENERATOR ================= -->
+      <section id="tab-hash" class="tab-panel">
+        <div class="panel-header">
+          <div>
+            <div class="section-kicker">Fingerprinting</div>
+            <h1 class="panel-title">Generate Cryptographic Digest & Metadata</h1>
+            <p class="panel-desc">Produce a persistent SHA-256 digest and inspect basic structural parameters for an image file.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="drop-area" id="genDropArea">
+            <input type="file" id="genFileInput" accept="image/*" class="file-input-hidden">
+            <div class="drop-placeholder" id="genPlaceholder">
+              <div class="drop-title">Drop Image to Calculate Digest</div>
+              <div class="drop-caption">Instant SHA-256 calculation & parameter readout</div>
+            </div>
+            <div class="image-preview-wrapper hidden" id="genPreviewWrapper">
+              <img id="genImgPreview" alt="Preview" class="img-preview">
+              <button type="button" class="btn-clear-img" onclick="clearGenSlot()">Dismiss</button>
+              <div class="file-info-overlay" id="genFileInfo">file.jpg</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="genResultContainer" class="results-container hidden">
+          <!-- Injected dynamically -->
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-content">
+        <div class="footer-tag">PixelGuard Architecture</div>
+        <div class="footer-text">Built for digital forensics, media integrity verification, and tamper analysis.</div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Notification Container -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
